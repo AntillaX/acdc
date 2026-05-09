@@ -2,6 +2,11 @@ const Game = require('./Game');
 const Player = require('./Player');
 
 const MAX_PLAYERS = 2;
+// Window we'll wait for a transient WS drop (refresh / network blip)
+// to come back before abandoning the round. Browser refresh + WS
+// reconnect typically happens in well under a second; 10s gives
+// plenty of headroom for slower phones and flaky networks.
+const DISCONNECT_GRACE_MS = 10000;
 
 class Room {
   constructor(code) {
@@ -10,6 +15,10 @@ class Room {
     this.hostId = null;
     this.game = null;
     this.state = 'lobby'; // lobby | playing | finished
+    // Per-player grace timers. Any time a player disconnects mid-game
+    // we start one of these; if they reconnect before it fires, the
+    // round continues unscathed.
+    this.graceTimers = new Map();
   }
 
   addPlayer(playerId, name, ws) {
@@ -47,10 +56,11 @@ class Room {
     return n;
   }
 
-  // Mid-game disconnect ends the round and bounces everyone back to
-  // lobby — matches Level 0's leave/disconnect behaviour. With only
-  // two players there's nothing to "wait out" anyway.
-  handleDisconnect(playerId) {
+  // Mid-game disconnect: hold the seat for `DISCONNECT_GRACE_MS` so
+  // the player can refresh / reconnect without abandoning the round.
+  // The Leave button (removeOccupant) bypasses this — that's a
+  // deliberate exit, not a transient drop.
+  handleDisconnect(playerId, immediate = false) {
     const player = this.players.get(playerId);
     if (!player) return;
     const playerName = player.name;
@@ -73,22 +83,18 @@ class Room {
     }
 
     if (this.state === 'playing' && this.game) {
-      this.game.destroy();
-      this.game = null;
-      this.state = 'lobby';
-      // Drop the disconnected player so the survivor isn't stuck with
-      // a ghost slot — they'll need a fresh opponent for the next game.
-      this.players.delete(playerId);
-      if (this.hostId === playerId) {
-        const next = this.players.keys().next();
-        this.hostId = next.done ? null : next.value;
+      if (immediate) {
+        this._endRoundDueToLeave(playerId, playerName);
+      } else {
+        this._startGraceTimer(playerId);
+        this.broadcast({
+          type: 'player_disconnected',
+          playerId,
+          playerName,
+          graceMs: DISCONNECT_GRACE_MS,
+          ...this.getState(),
+        });
       }
-      this.broadcast({
-        type: 'round_abandoned',
-        leftId: playerId,
-        leftName: playerName,
-        ...this.getState(),
-      });
       return;
     }
 
@@ -102,7 +108,8 @@ class Room {
   }
 
   removeOccupant(playerId) {
-    this.handleDisconnect(playerId);
+    // Deliberate Leave — no grace, end the round immediately.
+    this.handleDisconnect(playerId, true);
   }
 
   reconnect(playerId, ws) {
@@ -110,7 +117,57 @@ class Room {
     if (!player) return { success: false, error: 'Player not found in this room' };
     player.ws = ws;
     player.connected = true;
+    // They came back inside the grace window — cancel the abandonment
+    // timer and let the game keep going.
+    this._clearGraceTimer(playerId);
     return { success: true };
+  }
+
+  _startGraceTimer(playerId) {
+    this._clearGraceTimer(playerId);
+    const t = setTimeout(() => {
+      this.graceTimers.delete(playerId);
+      this._onGraceExpired(playerId);
+    }, DISCONNECT_GRACE_MS);
+    this.graceTimers.set(playerId, t);
+  }
+
+  _clearGraceTimer(playerId) {
+    const t = this.graceTimers.get(playerId);
+    if (t) {
+      clearTimeout(t);
+      this.graceTimers.delete(playerId);
+    }
+  }
+
+  _onGraceExpired(playerId) {
+    const player = this.players.get(playerId);
+    if (!player) return;
+    if (player.connected) return;            // already back, no-op
+    if (this.state !== 'playing' || !this.game) return; // game already ended
+    this._endRoundDueToLeave(playerId, player.name);
+  }
+
+  _endRoundDueToLeave(leftId, leftName) {
+    if (this.game) {
+      this.game.destroy();
+      this.game = null;
+    }
+    // The round's ending no matter who else may have been mid-grace.
+    for (const t of this.graceTimers.values()) clearTimeout(t);
+    this.graceTimers.clear();
+    this.state = 'lobby';
+    this.players.delete(leftId);
+    if (this.hostId === leftId) {
+      const next = this.players.keys().next();
+      this.hostId = next.done ? null : next.value;
+    }
+    this.broadcast({
+      type: 'round_abandoned',
+      leftId,
+      leftName,
+      ...this.getState(),
+    });
   }
 
   startGame() {
@@ -181,6 +238,8 @@ class Room {
   }
 
   destroy() {
+    for (const t of this.graceTimers.values()) clearTimeout(t);
+    this.graceTimers.clear();
     if (this.game) this.game.destroy();
   }
 }

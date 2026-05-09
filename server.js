@@ -166,6 +166,7 @@ function handleMessage(ws, msg) {
       }
       ws.playerId = msg.playerId;
       ws.roomCode = code;
+      const reconnectedPlayer = room.getPlayer(msg.playerId);
       ws.send(JSON.stringify({
         type: 'reconnected',
         playerId: msg.playerId,
@@ -174,6 +175,7 @@ function handleMessage(ws, msg) {
       room.broadcastExcept(msg.playerId, {
         type: 'player_reconnected',
         playerId: msg.playerId,
+        playerName: reconnectedPlayer ? reconnectedPlayer.name : undefined,
         ...room.getState(),
       });
       break;
