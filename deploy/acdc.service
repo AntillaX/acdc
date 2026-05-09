@@ -1,0 +1,17 @@
+[Unit]
+Description=AC/DC Game Server
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/acdc
+Environment=NODE_ENV=production
+Environment=PORT=3300
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
