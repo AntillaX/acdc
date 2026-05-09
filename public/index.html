@@ -92,7 +92,7 @@
         <!-- Pick UI -->
         <div id="pick-area" class="phase-area">
           <div class="phase-headline" id="pick-headline">Pick a number</div>
-          <div class="phase-sub muted" id="pick-sub">Both players choose 1–4 simultaneously</div>
+          <div class="phase-sub muted" id="pick-sub">Both players choose 1–3 simultaneously</div>
 
           <div class="timer">
             <div class="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
@@ -103,14 +103,20 @@
             <button class="pick-btn" data-value="1">1</button>
             <button class="pick-btn" data-value="2">2</button>
             <button class="pick-btn" data-value="3">3</button>
-            <button class="pick-btn" data-value="4">4</button>
           </div>
 
           <p id="pick-status" class="pick-status muted"></p>
         </div>
 
-        <!-- Reveal UI -->
-        <div id="reveal-area" class="phase-area" hidden>
+      </div>
+
+      <!-- Reveal overlay — full-screen, 3-second pause. -->
+      <div id="reveal-overlay" class="reveal-overlay" hidden>
+        <div class="reveal-overlay-backdrop"></div>
+        <div class="reveal-overlay-card">
+          <div class="reveal-turn caps small muted">
+            <span id="reveal-turn-text">Turn 1</span>
+          </div>
           <div class="reveal-cards">
             <div class="reveal-card" id="reveal-card-me">
               <div class="reveal-card-name" id="reveal-name-me"></div>
@@ -125,8 +131,8 @@
             </div>
           </div>
           <div class="reveal-result" id="reveal-result"></div>
+          <div class="reveal-swap" id="reveal-swap" hidden></div>
         </div>
-
       </div>
     </section>
 
@@ -170,16 +176,16 @@
 
           <section class="rules-section">
             <h3>A turn</h3>
-            <p>Both players privately pick a number from <strong>1 to 4</strong>. Picks reveal at the same time once both are in (or 15 seconds pass).</p>
+            <p>Both players privately pick a number from <strong>1 to 3</strong>. Picks reveal at the same time once both are in (or 15 seconds pass).</p>
             <ul>
               <li><strong>Numbers match</strong> &rarr; <span class="r-defend">BLOCKED</span>. No score. Turn ends, roles swap.</li>
-              <li><strong>Numbers differ</strong> &rarr; <span class="r-attack">attacker scores</span> their pick (1&ndash;4). Same roles, another pick round; the turn keeps going until somebody finally blocks.</li>
+              <li><strong>Numbers differ</strong> &rarr; <span class="r-attack">attacker scores</span> their pick (1, 2, or 3). Same roles, another pick round; the turn keeps going until somebody finally blocks.</li>
             </ul>
           </section>
 
           <section class="rules-section">
             <h3>Pick timer</h3>
-            <p>15 seconds per pick. If both picks land sooner, it resolves immediately. Run out of time and the system picks for you: <strong>1</strong> if you're attacking, <strong>4</strong> if you're defending.</p>
+            <p>15 seconds per pick. If both picks land sooner, it resolves immediately. Run out of time and the system picks for you: <strong>1</strong> if you're attacking, <strong>3</strong> if you're defending.</p>
           </section>
 
           <section class="rules-section">
