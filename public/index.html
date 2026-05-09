@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0a0a0a">
+  <title>AC/DC</title>
+  <link rel="stylesheet" href="style.css">
+
+  <!-- GA4 — same property as the hub / Platform / Auction so users
+       are counted once across the platformvv site. -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-S648R7WPGJ"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-S648R7WPGJ', { send_page_view: false });
+  </script>
+</head>
+<body>
+  <div id="app">
+
+    <!-- ── Landing ───────────────────────────────────────────── -->
+    <section id="landing-screen" class="screen active">
+      <a href="/" class="btn-home" aria-label="Back to platformvv hub">&larr; Hub</a>
+      <div class="landing-inner">
+        <header class="landing-header">
+          <h1 class="game-title">AC<span class="slash">/</span>DC</h1>
+          <p class="game-subtitle">Attack. Defend. Read.</p>
+        </header>
+
+        <form id="landing-form" class="form-stack" autocomplete="off">
+          <input type="text" id="player-name" class="input" placeholder="Your name"
+                 maxlength="16" autocomplete="off" spellcheck="false" required>
+
+          <button type="button" id="create-btn" class="btn btn-primary">Create Game</button>
+
+          <div class="divider"><span>or join a game</span></div>
+
+          <div class="join-row">
+            <input type="text" id="room-code-input" class="input input-code" placeholder="CODE"
+                   maxlength="4" size="4" autocomplete="off" spellcheck="false">
+            <button type="button" id="join-btn" class="btn btn-secondary">Join</button>
+          </div>
+        </form>
+
+        <p id="landing-error" class="error-text" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <!-- ── Lobby (waiting room) ─────────────────────────────── -->
+    <section id="lobby-screen" class="screen">
+      <button id="lobby-leave-btn" class="btn-home">&larr; Leave</button>
+      <div class="lobby-inner">
+        <p class="muted small caps">Room code · tap to copy</p>
+        <button id="room-code-display" class="room-code" type="button" aria-label="Copy room code"></button>
+
+        <ul id="lobby-players" class="players-list"></ul>
+
+        <p id="lobby-hint" class="muted">Waiting for an opponent…</p>
+
+        <button id="start-btn" class="btn btn-primary" disabled>Start Game</button>
+      </div>
+    </section>
+
+    <!-- ── Game ──────────────────────────────────────────────── -->
+    <section id="game-screen" class="screen">
+      <button id="game-leave-btn" class="btn-home">&larr; Leave</button>
+
+      <div class="game-inner">
+
+        <div class="scoreboard">
+          <div class="score-card" id="score-card-me">
+            <div class="score-name" id="score-name-me"></div>
+            <div class="score-value" id="score-value-me">0</div>
+            <div class="score-role" id="score-role-me"></div>
+          </div>
+          <div class="score-divider">
+            <div class="turn-label">Turn</div>
+            <div class="turn-number" id="turn-number">1</div>
+            <div class="turn-suffix" id="turn-suffix">of 10</div>
+          </div>
+          <div class="score-card" id="score-card-opp">
+            <div class="score-name" id="score-name-opp"></div>
+            <div class="score-value" id="score-value-opp">0</div>
+            <div class="score-role" id="score-role-opp"></div>
+          </div>
+        </div>
+
+        <!-- Pick UI -->
+        <div id="pick-area" class="phase-area">
+          <div class="phase-headline" id="pick-headline">Pick a number</div>
+          <div class="phase-sub muted" id="pick-sub">Both players choose 1–4 simultaneously</div>
+
+          <div class="timer">
+            <div class="timer-bar"><div class="timer-fill" id="timer-fill"></div></div>
+            <div class="timer-value" id="timer-value">15</div>
+          </div>
+
+          <div class="picks">
+            <button class="pick-btn" data-value="1">1</button>
+            <button class="pick-btn" data-value="2">2</button>
+            <button class="pick-btn" data-value="3">3</button>
+            <button class="pick-btn" data-value="4">4</button>
+          </div>
+
+          <p id="pick-status" class="pick-status muted"></p>
+        </div>
+
+        <!-- Reveal UI -->
+        <div id="reveal-area" class="phase-area" hidden>
+          <div class="reveal-cards">
+            <div class="reveal-card" id="reveal-card-me">
+              <div class="reveal-card-name" id="reveal-name-me"></div>
+              <div class="reveal-card-role" id="reveal-role-me"></div>
+              <div class="reveal-card-value" id="reveal-value-me">?</div>
+            </div>
+            <div class="reveal-vs">vs</div>
+            <div class="reveal-card" id="reveal-card-opp">
+              <div class="reveal-card-name" id="reveal-name-opp"></div>
+              <div class="reveal-card-role" id="reveal-role-opp"></div>
+              <div class="reveal-card-value" id="reveal-value-opp">?</div>
+            </div>
+          </div>
+          <div class="reveal-result" id="reveal-result"></div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ── Game Over ─────────────────────────────────────────── -->
+    <section id="gameover-screen" class="screen">
+      <button id="over-leave-btn" class="btn-home">&larr; Leave</button>
+      <div class="over-inner">
+        <h2 class="over-headline" id="over-headline">Game Over</h2>
+        <p class="over-reason muted" id="over-reason"></p>
+
+        <div class="final-scoreboard">
+          <div class="final-row" id="final-row-me">
+            <span class="final-name" id="final-name-me"></span>
+            <span class="final-value" id="final-value-me">0</span>
+          </div>
+          <div class="final-row" id="final-row-opp">
+            <span class="final-name" id="final-name-opp"></span>
+            <span class="final-value" id="final-value-opp">0</span>
+          </div>
+        </div>
+
+        <button id="play-again-btn" class="btn btn-primary">Play Again</button>
+      </div>
+    </section>
+
+    <!-- Toast container -->
+    <div id="toast" class="toast" hidden></div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
