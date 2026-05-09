@@ -128,10 +128,25 @@
 
       case 'player_joined':
       case 'player_left':
-      case 'player_reconnected':
-      case 'player_disconnected':
       case 'lobby_reset':
         applyServerState(msg);
+        routeAfterStateUpdate();
+        return;
+
+      case 'player_disconnected':
+        applyServerState(msg);
+        if (msg.playerId !== state.playerId) {
+          const secs = Math.round((msg.graceMs || 10000) / 1000);
+          toast(`${msg.playerName || 'Opponent'} disconnected — waiting up to ${secs}s`);
+        }
+        routeAfterStateUpdate();
+        return;
+
+      case 'player_reconnected':
+        applyServerState(msg);
+        if (msg.playerId !== state.playerId) {
+          toast(`${msg.playerName || 'Opponent'} reconnected`);
+        }
         routeAfterStateUpdate();
         return;
 
