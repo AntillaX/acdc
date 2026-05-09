@@ -339,17 +339,18 @@
       $('turn-suffix').textContent = `of ${state.gameLengthTurns}`;
     }
 
-    // Phase
+    // Phase — pick area always rendered in the page; the reveal is a
+    // full-screen overlay that sits above it during the 3s pause.
     const pickArea = $('pick-area');
-    const revealArea = $('reveal-area');
+    const overlay = $('reveal-overlay');
     if (state.gameStatus === 'reveal') {
       pickArea.hidden = true;
-      revealArea.hidden = false;
+      overlay.hidden = false;
       renderRevealUI(me, opp, isMeAttacker);
       stopTimer();
     } else {
       pickArea.hidden = false;
-      revealArea.hidden = true;
+      overlay.hidden = true;
       renderPickUI(isMeAttacker);
       startTimer();
     }
@@ -362,11 +363,11 @@
     if (isMeAttacker) {
       headline.textContent = 'You are attacking';
       headline.classList.add('attack');
-      sub.textContent = 'Pick 1–4. Score = your number, unless they match.';
+      sub.textContent = 'Pick 1–3. Score = your number, unless they match.';
     } else {
       headline.textContent = 'You are defending';
       headline.classList.add('defend');
-      sub.textContent = 'Pick 1–4. Match their number to block the attack.';
+      sub.textContent = 'Pick 1–3. Match their number to block the attack.';
     }
 
     const buttons = document.querySelectorAll('.pick-btn');
@@ -376,6 +377,13 @@
       btn.classList.toggle('selected', state.myPick === v);
       btn.disabled = locked;
     });
+
+    // Fresh round → strip any lingering :focus from a previously-tapped
+    // pick button. On mobile, focus-visible style is gold-bordered like
+    // the selected style and reads as "still highlighted".
+    if (!locked && document.activeElement && document.activeElement.matches('.pick-btn')) {
+      document.activeElement.blur();
+    }
 
     const status = $('pick-status');
     if (locked) {
@@ -394,6 +402,14 @@
   function renderRevealUI(me, opp, isMeAttacker) {
     const r = state.lastReveal;
     if (!r) return;
+
+    // Turn header — "Turn 3" or "Sudden death turn 12".
+    const turnText = $('reveal-turn-text');
+    if (r.turnNumber > state.gameLengthTurns) {
+      turnText.textContent = `Sudden death · turn ${r.turnNumber}`;
+    } else {
+      turnText.textContent = `Turn ${r.turnNumber} of ${state.gameLengthTurns}`;
+    }
 
     $('reveal-name-me').textContent = me.name;
     $('reveal-name-opp').textContent = opp.name;
@@ -421,6 +437,20 @@
       const attackerPlayer = state.players.find((p) => p.id === r.attackerId);
       const attackerName = attackerPlayer ? attackerPlayer.name : 'Attacker';
       result.textContent = `+${r.pointsAwarded} to ${attackerName}`;
+    }
+
+    // On a block, roles swap for the next turn (unless the game is
+    // ending — but in that case the gameover screen takes over before
+    // this overlay can mislead anyone). Tell the player what's coming.
+    const swap = $('reveal-swap');
+    if (r.blocked) {
+      // I was the attacker this turn → I defend next, and vice versa.
+      const willAttackNext = !isMeAttacker;
+      swap.textContent = willAttackNext ? 'Your turn to attack' : 'Your turn to defend';
+      swap.className = 'reveal-swap ' + (willAttackNext ? 'attack' : 'defend');
+      swap.hidden = false;
+    } else {
+      swap.hidden = true;
     }
   }
 
@@ -572,6 +602,9 @@
       const v = Number(btn.dataset.value);
       if (!Number.isInteger(v) || state.gameStatus !== 'pick') return;
       if (state.myPick != null) return;
+      // Drop focus right away so a sticky :focus-visible halo doesn't
+      // bleed into the next round and look like a pre-selection.
+      btn.blur();
       // Optimistic UI: server will broadcast pick_submitted shortly.
       state.myPick = v;
       renderGame();

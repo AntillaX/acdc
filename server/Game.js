@@ -1,7 +1,7 @@
 // AC/DC game.
 //
 // Two players. Each turn one attacks, one defends. Both privately
-// pick 1–4 within 15s; reveal is simultaneous. Match → defender blocks,
+// pick 1–3 within 15s; reveal is simultaneous. Match → defender blocks,
 // turn ends, roles swap. Mismatch → attacker scores their pick, same
 // turn continues with another pick round. Standard length is 10 attack
 // turns (5 per player). A 30-point lead ends the game immediately.
@@ -9,13 +9,17 @@
 // continue until somebody leads at the end of a turn.
 
 const PICK_DURATION_MS = 15000;
-const REVEAL_BLOCK_MS = 2200;   // pause after a block before swap+new turn
-const REVEAL_SCORE_MS = 1800;   // pause after a score before next pick round
-const REVEAL_FINAL_MS = 2400;   // pause on the last reveal before game_over
+// 3-second pause on every reveal so players can read the result
+// (and the role-swap announce, on a block) before the next round.
+const REVEAL_BLOCK_MS = 3000;
+const REVEAL_SCORE_MS = 3000;
+const REVEAL_FINAL_MS = 3000;
 const GAME_LENGTH_TURNS = 10;
 const INSTANT_WIN_LEAD = 30;
+const PICK_MIN = 1;
+const PICK_MAX = 3;
 const ATTACKER_DEFAULT_PICK = 1;
-const DEFENDER_DEFAULT_PICK = 4;
+const DEFENDER_DEFAULT_PICK = 3;
 
 class Game {
   constructor(players, broadcast) {
@@ -77,8 +81,8 @@ class Game {
     if (playerId !== this.attackerId && playerId !== this.defenderId) {
       return { success: false, error: 'Not your turn' };
     }
-    if (!Number.isInteger(value) || value < 1 || value > 4) {
-      return { success: false, error: 'Pick must be 1–4' };
+    if (!Number.isInteger(value) || value < PICK_MIN || value > PICK_MAX) {
+      return { success: false, error: `Pick must be ${PICK_MIN}–${PICK_MAX}` };
     }
     if (this.picks[playerId] != null) {
       return { success: false, error: 'Already picked' };
@@ -200,6 +204,8 @@ class Game {
       endReason: this.endReason,
       gameLengthTurns: GAME_LENGTH_TURNS,
       instantWinLead: INSTANT_WIN_LEAD,
+      pickMin: PICK_MIN,
+      pickMax: PICK_MAX,
     };
   }
 
@@ -218,6 +224,8 @@ class Game {
       endReason: this.endReason,
       gameLengthTurns: GAME_LENGTH_TURNS,
       instantWinLead: INSTANT_WIN_LEAD,
+      pickMin: PICK_MIN,
+      pickMax: PICK_MAX,
     };
   }
 
