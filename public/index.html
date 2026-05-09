@@ -60,12 +60,14 @@
         <p id="lobby-hint" class="muted">Waiting for an opponent…</p>
 
         <button id="start-btn" class="btn btn-primary" disabled>Start Game</button>
+        <button id="lobby-rules-btn" class="btn btn-ghost rules-btn" type="button">How to play</button>
       </div>
     </section>
 
     <!-- ── Game ──────────────────────────────────────────────── -->
     <section id="game-screen" class="screen">
       <button id="game-leave-btn" class="btn-home">&larr; Leave</button>
+      <button id="game-rules-btn" class="btn-info" type="button" aria-label="How to play">?</button>
 
       <div class="game-inner">
 
@@ -152,6 +154,52 @@
 
     <!-- Toast container -->
     <div id="toast" class="toast" hidden></div>
+
+    <!-- Rules modal — opened from the lobby and from in-game. -->
+    <div id="rules-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="rules-title">
+      <div class="modal-backdrop" data-modal-close></div>
+      <div class="modal-card">
+        <button class="modal-close" type="button" aria-label="Close" data-modal-close>&times;</button>
+        <h2 id="rules-title" class="modal-title">How to play AC<span class="slash">/</span>DC</h2>
+
+        <div class="rules-body">
+          <section class="rules-section">
+            <h3>The game</h3>
+            <p>Two players. Each turn one <strong class="r-attack">attacks</strong> and one <strong class="r-defend">defends</strong>. Roles swap whenever the defender successfully blocks.</p>
+          </section>
+
+          <section class="rules-section">
+            <h3>A turn</h3>
+            <p>Both players privately pick a number from <strong>1 to 4</strong>. Picks reveal at the same time once both are in (or 15 seconds pass).</p>
+            <ul>
+              <li><strong>Numbers match</strong> &rarr; <span class="r-defend">BLOCKED</span>. No score. Turn ends, roles swap.</li>
+              <li><strong>Numbers differ</strong> &rarr; <span class="r-attack">attacker scores</span> their pick (1&ndash;4). Same roles, another pick round; the turn keeps going until somebody finally blocks.</li>
+            </ul>
+          </section>
+
+          <section class="rules-section">
+            <h3>Pick timer</h3>
+            <p>15 seconds per pick. If both picks land sooner, it resolves immediately. Run out of time and the system picks for you: <strong>1</strong> if you're attacking, <strong>4</strong> if you're defending.</p>
+          </section>
+
+          <section class="rules-section">
+            <h3>Length</h3>
+            <p>5 attack turns each, 10 total &mdash; player A attacks turn 1, B attacks turn 2, A turn 3, and so on.</p>
+          </section>
+
+          <section class="rules-section">
+            <h3>Winning</h3>
+            <ul>
+              <li><strong>30-point lead</strong> at any moment ends the game instantly.</li>
+              <li>After 10 turns, whoever has more points wins.</li>
+              <li>Tied at the end of 10? <strong>Sudden death</strong> &mdash; alternating turns continue until somebody leads at the end of a turn.</li>
+            </ul>
+          </section>
+        </div>
+
+        <button class="btn btn-primary modal-cta" type="button" data-modal-close>Got it</button>
+      </div>
+    </div>
 
   </div>
 

@@ -149,14 +149,18 @@
       case 'pick_started':
       case 'pick_submitted':
       case 'reveal':
+        applyServerState(msg);
+        // gotoScreen renders only when actually switching screens; if
+        // we're already on `game` it short-circuits without calling
+        // render(). Without an explicit render here, a `reveal` message
+        // would update state but leave the DOM stuck in pick-mode.
+        if (state.screen !== 'game') gotoScreen('game');
+        else render();
+        return;
+
       case 'game_over':
         applyServerState(msg);
-        if (state.screen !== 'game' && state.screen !== 'gameover') {
-          gotoScreen('game');
-        }
-        if (msg.type === 'game_over') {
-          gotoScreen('gameover');
-        }
+        gotoScreen('gameover');
         return;
 
       case 'left_room':
@@ -586,6 +590,24 @@
   $('lobby-leave-btn').addEventListener('click', leaveAndGoHome);
   $('game-leave-btn').addEventListener('click', leaveAndGoHome);
   $('over-leave-btn').addEventListener('click', leaveAndGoHome);
+
+  // Rules modal — opened from the lobby and during a game. Closed via
+  // the × button, the "Got it" CTA, the backdrop, or Escape.
+  function openRules() {
+    $('rules-modal').hidden = false;
+    track('acdc_open_rules');
+  }
+  function closeRules() {
+    $('rules-modal').hidden = true;
+  }
+  $('lobby-rules-btn').addEventListener('click', openRules);
+  $('game-rules-btn').addEventListener('click', openRules);
+  document.querySelectorAll('[data-modal-close]').forEach((el) => {
+    el.addEventListener('click', closeRules);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !$('rules-modal').hidden) closeRules();
+  });
 
   // GA tracking helper — no-op if gtag isn't loaded.
   function track(name, params) {
