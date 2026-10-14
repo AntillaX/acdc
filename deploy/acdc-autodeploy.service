@@ -1,0 +1,22 @@
+# Runs one deploy check. Paired with acdc-autodeploy.timer, which
+# fires it every couple of minutes; deploy.sh itself decides whether
+# there is anything to do, so a tick with no new commits is a no-op and
+# never restarts the service.
+#
+# Install:
+#   sudo cp deploy/acdc-autodeploy.* /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now acdc-autodeploy.timer
+
+[Unit]
+Description=Deploy AC/DC when main has new commits
+After=network-online.target acdc.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/acdc
+ExecStart=/opt/acdc/deploy/deploy.sh
+# A failed check shouldn't be fatal — the next tick tries again.
+SuccessExitStatus=0
+TimeoutStartSec=600

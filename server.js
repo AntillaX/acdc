@@ -22,6 +22,42 @@ app.use(express.static(path.join(__dirname, 'public'), {
 
 const rooms = new Map();
 
+// Which commit is actually running. Read once at boot: there is
+// otherwise no way to answer "is my change live yet?" without shell
+// access to the droplet, and that question comes up every deploy.
+const DEPLOYED_COMMIT = (() => {
+  try {
+    return require('child_process')
+      .execSync('git rev-parse --short HEAD', { cwd: __dirname, stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString().trim() || null;
+  } catch {
+    return null; // not a git checkout, or git isn't installed
+  }
+})();
+const STARTED_AT = new Date().toISOString();
+
+// Whether anyone is mid-game right now. The auto-deploy timer asks
+// before restarting: rooms live in memory, so a restart mid-game ends
+// it. A room only counts while someone is still connected to it.
+// Reported as counts rather than any room detail — this is public.
+app.get('/api/status', (req, res) => {
+  let active = 0;
+  let players = 0;
+  for (const room of rooms.values()) {
+    const connected = room.connectedCount();
+    if (room.state === 'playing' && connected > 0) active++;
+    players += connected;
+  }
+  res.json({
+    commit: DEPLOYED_COMMIT,
+    startedAt: STARTED_AT,
+    rooms: rooms.size,
+    activeGames: active,
+    connectedPlayers: players,
+    busy: active > 0,
+  });
+});
+
 // Avoid 0/O and 1/I/L in room codes — they're typed off a phone screen.
 const ROOM_CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ';
 
